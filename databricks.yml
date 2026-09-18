@@ -28,9 +28,10 @@ resources:
     rearc_quest_job:
       name: "[${bundle.target}] rearc-quest-job"
       tasks:
+        # Task 1: Ingest BLS files and population API
         - task_key: ingest
           notebook_task:
-            notebook_path: ./notebooks/01_ingest.py
+            notebook_path: ./notebooks/01_ingest.py.ipynb
             base_parameters:
               catalog: ${var.catalog}
               schema: raw
@@ -38,6 +39,7 @@ resources:
               contact_email: ${var.contact_email}
           run_if: ALL_SUCCESS
 
+        # Task 2: Run the pipeline (Bronze -> Silver -> Gold)
         - task_key: pipeline
           depends_on:
             - task_key: ingest
@@ -45,9 +47,36 @@ resources:
             pipeline_id: ${resources.pipelines.main_pipeline.id}
           run_if: ALL_SUCCESS
 
+        # Task 3: Run validation queries (sanity checks on Gold)
+        - task_key: validate
+          depends_on:
+            - task_key: pipeline
+          notebook_task:
+            notebook_path: ./notebooks/02_validate.sql.ipynb
+            base_parameters:
+              catalog: ${var.catalog}
+          run_if: ALL_SUCCESS
+
+        # Task 4: Parity check (SQL vs PySpark equivalence)
+        - task_key: parity_check
+          depends_on:
+            - task_key: pipeline
+          notebook_task:
+            notebook_path: ./notebooks/03_parity_check.py.ipynb
+            base_parameters:
+              catalog: ${var.catalog}
+          run_if: ALL_SUCCESS
+
       email_notifications:
         on_failure:
           - ${var.contact_email}
+
+      # Schedule: 5th of each month at 6am UTC
+      # BLS updates near start of 2nd and 3rd month of each quarter
+      schedule:
+        quartz_cron_expression: "0 0 6 5 * ?"
+        timezone_id: UTC
+        pause_status: PAUSED
 
 targets:
   dev:
@@ -55,3 +84,10 @@ targets:
     default: true
     workspace:
       host: https://dbc-5d832ace-b003.cloud.databricks.com
+
+  prod:
+    mode: production
+    workspace:
+      host: https://dbc-5d832ace-b003.cloud.databricks.com
+    run_as:
+      user_name: pronnoy1998@gmail.com
