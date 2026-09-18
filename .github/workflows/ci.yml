@@ -10,7 +10,7 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements-dev.txt # pyspark, pytest, requests, ruff
       - run: ruff check src tests
-      - run: PYTHONPATH=src:src/alternatives pytest -q
+      - run: PYTHONPATH=src:src/alternatives:src/alternatives/gold_pyspark_pipeline/transformations pytest -q
       - uses: databricks/setup-cli@main
       - run: databricks bundle validate
         env:

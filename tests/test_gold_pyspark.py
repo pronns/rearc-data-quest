@@ -1,6 +1,7 @@
 import sys
+from pathlib import Path
 
-sys.path.append("/Workspace/Users/pronnoy1998@gmail.com/rearc-quest/src/alternatives/gold_pyspark_pipeline/transformations")
+sys.path.append(str(Path(__file__).resolve().parents[1] / "src/alternatives/gold_pyspark_pipeline/transformations"))
 from decimal import Decimal
 
 import pytest
