@@ -1,0 +1,193 @@
+# contracts/bls_pr.yml
+# Data contract for BLS Major Sector Productivity and Costs (PR) series
+# Source: https://download.bls.gov/pub/time.series/pr/
+# Spec: pr.txt (Section 4-6)
+# Last verified: Sep 2026
+
+version: "1.0"
+owner: "pronnoy1998@gmail.com"
+source: "Bureau of Labor Statistics"
+update_frequency: "quarterly"
+sla_days: 120
+
+files:
+  pr.data.0.Current:
+    description: "Current year-to-date data"
+    columns:
+      - name: series_id
+        type: STRING
+        nullable: false
+      - name: year
+        type: STRING
+        nullable: false
+      - name: period
+        type: STRING
+        nullable: false
+        allowed_values: [Q01, Q02, Q03, Q04, Q05]
+      - name: value
+        type: STRING
+        nullable: true
+      - name: footnote_codes
+        type: STRING
+        nullable: true
+
+  pr.data.1.AllData:
+    description: "All historical data"
+    columns:
+      - name: series_id
+        type: STRING
+        nullable: false
+      - name: year
+        type: STRING
+        nullable: false
+      - name: period
+        type: STRING
+        nullable: false
+        allowed_values: [Q01, Q02, Q03, Q04, Q05]
+      - name: value
+        type: STRING
+        nullable: true
+      - name: footnote_codes
+        type: STRING
+        nullable: true
+
+  pr.series:
+    description: "Series dimension with codes"
+    columns:
+      - name: series_id
+        type: STRING
+        nullable: false
+      - name: sector_code
+        type: STRING
+        nullable: false
+      - name: class_code
+        type: STRING
+        nullable: false
+      - name: measure_code
+        type: STRING
+        nullable: false
+      - name: duration_code
+        type: STRING
+        nullable: false
+      - name: seasonal
+        type: STRING
+        nullable: false
+      - name: base_year
+        type: STRING
+        nullable: true
+      - name: footnote_codes
+        type: STRING
+        nullable: true
+      - name: begin_year
+        type: STRING
+        nullable: false
+      - name: begin_period
+        type: STRING
+        nullable: false
+      - name: end_year
+        type: STRING
+        nullable: false
+      - name: end_period
+        type: STRING
+        nullable: false
+
+  pr.sector:
+    description: "Sector code mapping"
+    columns:
+      - name: sector_code
+        type: STRING
+        nullable: false
+      - name: sector_name
+        type: STRING
+        nullable: false
+
+  pr.measure:
+    description: "Measure code mapping"
+    columns:
+      - name: measure_code
+        type: STRING
+        nullable: false
+      - name: measure_text
+        type: STRING
+        nullable: false
+
+  pr.class:
+    description: "Class code mapping"
+    columns:
+      - name: class_code
+        type: STRING
+        nullable: false
+      - name: class_text
+        type: STRING
+        nullable: false
+
+  pr.duration:
+    description: "Duration code mapping"
+    columns:
+      - name: duration_code
+        type: STRING
+        nullable: false
+      - name: duration_text
+        type: STRING
+        nullable: false
+
+  pr.seasonal:
+    description: "Seasonal adjustment code mapping"
+    columns:
+      - name: seasonal_code
+        type: STRING
+        nullable: false
+      - name: seasonal_text
+        type: STRING
+        nullable: false
+
+  pr.period:
+    description: "Period code mapping. Q05 = Annual Average"
+    columns:
+      - name: period
+        type: STRING
+        nullable: false
+      - name: period_abbr
+        type: STRING
+        nullable: false
+      - name: period_name
+        type: STRING
+        nullable: false
+
+  pr.footnote:
+    description: "Footnote code mapping"
+    columns:
+      - name: footnote_code
+        type: STRING
+        nullable: false
+      - name: footnote_text
+        type: STRING
+        nullable: false
+
+bronze_expectations:
+  min_row_counts:
+    bronze_pr_data: 100000
+    bronze_pr_series: 200
+    bronze_pr_sector: 5
+    bronze_pr_measure: 10
+    bronze_pr_class: 5
+    bronze_pr_duration: 5
+    bronze_pr_seasonal: 2
+    bronze_pr_period: 5
+    bronze_pr_footnote: 1
+    bronze_population: 10
+
+silver_expectations:
+  silver_pr_observations:
+    min_rows: 100000
+    key_columns: [series_id, year, period]
+    no_duplicates: true
+  silver_pr_series_dim:
+    min_rows: 200
+    key_columns: [series_id]
+    no_duplicates: true
+  silver_population:
+    min_rows: 10
+    max_rows: 15
+    key_columns: [year]
+    no_duplicates: true
