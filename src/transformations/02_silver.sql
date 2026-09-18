@@ -49,11 +49,6 @@ SELECT series_id,
   _file_modified
 FROM ranked
 WHERE rn = 1;
---BONUS:
--- Liquid clustering: organises data by series_id for faster per-series queries.
--- Unnecessary at this size (~77K rows) but demonstrates the pattern for
--- production datasets with millions of series observations.
-ALTER TABLE rearc_quest.silver.silver_pr_observations CLUSTER BY (series_id, year);
 CREATE
 OR REFRESH MATERIALIZED VIEW rearc_quest.silver.silver_pr_series_dim (
   CONSTRAINT series_id_not_null EXPECT (series_id IS NOT NULL) ON VIOLATION FAIL

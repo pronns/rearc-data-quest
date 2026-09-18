@@ -76,24 +76,103 @@ FROM rearc_quest.silver.silver_pr_observations o
     LEFT JOIN rearc_quest.silver.silver_pr_series_dim d ON o.series_id = d.series_id
 WHERE o.series_id = 'PRS30006032'
     AND o.period = 'Q01';
---Added bonus: Freshness SLA view: shows how stale each source is
--- Freshness SLA view: shows how stale each source is
+
+
+-- BONUS: Freshness SLA view: monitors staleness of every bronze source.
+-- Silver tables are excluded — their freshness reflects pipeline execution, not source arrival.
+-- Structure: each CTE returns 5 base columns, all_freshness UNION ALLs them, final SELECT computes derived columns once.
 CREATE
-OR REFRESH MATERIALIZED VIEW gold.gold_freshness COMMENT 'Data freshness monitor. Alerts when sources exceed SLA thresholds.' TBLPROPERTIES ('quality' = 'gold') AS WITH bls_freshness AS (
-    SELECT 'bls_pr' AS source,
-        'BLS Major Sector Productivity' AS source_name,
+OR REFRESH MATERIALIZED VIEW rearc_quest.gold.gold_freshness COMMENT 'Data freshness monitor. Alerts when sources exceed SLA thresholds.' TBLPROPERTIES ('quality' = 'gold') AS WITH bls_pr_data_freshness AS (
+    SELECT 'bls_pr_data' AS source,
+        'BLS PR Data (observations)' AS source_name,
         max(_file_modified) AS last_modified,
         120 AS sla_days,
         datediff(current_timestamp(), max(_file_modified)) AS days_since_update
     FROM rearc_quest.bronze.bronze_pr_data
 ),
-pop_freshness AS (
+bls_pr_series_freshness AS (
+    SELECT 'bls_pr_series' AS source,
+        'BLS PR Series definitions' AS source_name,
+        max(_file_modified) AS last_modified,
+        120 AS sla_days,
+        datediff(current_timestamp(), max(_file_modified)) AS days_since_update
+    FROM rearc_quest.bronze.bronze_pr_series
+),
+bls_pr_sector_freshness AS (
+    SELECT 'bls_pr_sector' AS source,
+        'BLS PR Sector mapping' AS source_name,
+        max(_file_modified) AS last_modified,
+        365 AS sla_days,
+        datediff(current_timestamp(), max(_file_modified)) AS days_since_update
+    FROM rearc_quest.bronze.bronze_pr_sector
+),
+bls_pr_measure_freshness AS (
+    SELECT 'bls_pr_measure' AS source,
+        'BLS PR Measure mapping' AS source_name,
+        max(_file_modified) AS last_modified,
+        365 AS sla_days,
+        datediff(current_timestamp(), max(_file_modified)) AS days_since_update
+    FROM rearc_quest.bronze.bronze_pr_measure
+),
+bls_pr_class_freshness AS (
+    SELECT 'bls_pr_class' AS source,
+        'BLS PR Class mapping' AS source_name,
+        max(_file_modified) AS last_modified,
+        365 AS sla_days,
+        datediff(current_timestamp(), max(_file_modified)) AS days_since_update
+    FROM rearc_quest.bronze.bronze_pr_class
+),
+bls_pr_duration_freshness AS (
+    SELECT 'bls_pr_duration' AS source,
+        'BLS PR Duration mapping' AS source_name,
+        max(_file_modified) AS last_modified,
+        365 AS sla_days,
+        datediff(current_timestamp(), max(_file_modified)) AS days_since_update
+    FROM rearc_quest.bronze.bronze_pr_duration
+),
+bls_pr_seasonal_freshness AS (
+    SELECT 'bls_pr_seasonal' AS source,
+        'BLS PR Seasonal mapping' AS source_name,
+        max(_file_modified) AS last_modified,
+        365 AS sla_days,
+        datediff(current_timestamp(), max(_file_modified)) AS days_since_update
+    FROM rearc_quest.bronze.bronze_pr_seasonal
+),
+bls_pr_period_freshness AS (
+    SELECT 'bls_pr_period' AS source,
+        'BLS PR Period mapping' AS source_name,
+        max(_file_modified) AS last_modified,
+        365 AS sla_days,
+        datediff(current_timestamp(), max(_file_modified)) AS days_since_update
+    FROM rearc_quest.bronze.bronze_pr_period
+),
+bls_pr_footnote_freshness AS (
+    SELECT 'bls_pr_footnote' AS source,
+        'BLS PR Footnote mapping' AS source_name,
+        max(_file_modified) AS last_modified,
+        365 AS sla_days,
+        datediff(current_timestamp(), max(_file_modified)) AS days_since_update
+    FROM rearc_quest.bronze.bronze_pr_footnote
+),
+population_freshness AS (
     SELECT 'datausa_population' AS source,
         'DataUSA ACS Population' AS source_name,
         max(_file_modified) AS last_modified,
         365 AS sla_days,
         datediff(current_timestamp(), max(_file_modified)) AS days_since_update
     FROM rearc_quest.bronze.bronze_population
+),
+all_freshness AS (
+    SELECT * FROM bls_pr_data_freshness
+    UNION ALL SELECT * FROM bls_pr_series_freshness
+    UNION ALL SELECT * FROM bls_pr_sector_freshness
+    UNION ALL SELECT * FROM bls_pr_measure_freshness
+    UNION ALL SELECT * FROM bls_pr_class_freshness
+    UNION ALL SELECT * FROM bls_pr_duration_freshness
+    UNION ALL SELECT * FROM bls_pr_seasonal_freshness
+    UNION ALL SELECT * FROM bls_pr_period_freshness
+    UNION ALL SELECT * FROM bls_pr_footnote_freshness
+    UNION ALL SELECT * FROM population_freshness
 )
 SELECT source,
     source_name,
@@ -112,7 +191,4 @@ SELECT source,
         cast(sla_days AS STRING),
         ' days)'
     ) AS summary
-FROM bls_freshness
-UNION ALL
-SELECT *
-FROM pop_freshness;
+FROM all_freshness;
