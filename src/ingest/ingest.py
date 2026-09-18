@@ -17,9 +17,9 @@ import json
 import os
 import re
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Iterable
+from datetime import UTC, datetime
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -117,7 +117,7 @@ def parse_bls_listing(html: str, base_url: str) -> list[RemoteFile]:
     files: list[RemoteFile] = []
     for date_s, time_s, size_s, href, name in _LISTING_ROW.findall(html):
         ts = datetime.strptime(f"{date_s} {time_s}", "%m/%d/%Y %I:%M %p").replace(
-            tzinfo=timezone.utc
+            tzinfo=UTC
         )
         url = requests.compat.urljoin(base_url, href)
         files.append(
@@ -225,7 +225,7 @@ VALUES (u.source, u.file_name, u.volume_path, u.remote_last_modified, u.remote_s
 def ingest_bls(spark, cfg: Config, session: requests.Session | None = None) -> dict:
     session = session or build_session(cfg)
     source = "bls_pr"
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     target_dir = f"{cfg.volume_root}/bls/pr"
     removed_dir = f"{cfg.volume_root}/bls/_removed/{now:%Y%m%dT%H%M%SZ}"
     remote = discover_bls_files(session, cfg)
@@ -244,7 +244,7 @@ def ingest_bls(spark, cfg: Config, session: requests.Session | None = None) -> d
         if (
             prior_active
             and prior["remote_last_modified"] is not None
-            and prior["remote_last_modified"].replace(tzinfo=timezone.utc) == rf.last_modified
+            and prior["remote_last_modified"].replace(tzinfo=UTC) == rf.last_modified
             and prior["remote_size_bytes"] == rf.size_bytes
         ):
             stats["unchanged"] += 1
@@ -266,7 +266,7 @@ def ingest_bls(spark, cfg: Config, session: requests.Session | None = None) -> d
         tmp_path, nbytes = download_to_tmp(session, rf.url, final_path, cfg.request_timeout_s)
         if rf.size_bytes is not None and nbytes != rf.size_bytes:
             os.remove(tmp_path)
-            raise IOError(f"{rf.name}: downloaded {nbytes} bytes, listing says {rf.size_bytes}")
+            raise OSError(f"{rf.name}: downloaded {nbytes} bytes, listing says {rf.size_bytes}")
         digest = sha256_of_file(tmp_path)
         if prior_active and prior["sha256"] == digest:
             os.remove(tmp_path)  # touched upstream, content identical
@@ -328,7 +328,7 @@ def ingest_population(spark, cfg: Config, session: requests.Session | None = Non
     session = session or build_session(cfg)
     source = "datausa_population"
     logical_name = "population.json"
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     latest_dir = f"{cfg.volume_root}/population/latest"
     archive_dir = f"{cfg.volume_root}/population/archive"
     final_path = f"{latest_dir}/{logical_name}"

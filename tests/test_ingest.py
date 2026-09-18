@@ -1,10 +1,12 @@
-import hashlib, json
+import hashlib
+import json
+
 # from ingest.ingest import parse_bls_listing, canonical_json_bytes
 
 def parse_bls_listing(listing, base_url):
     # Dummy implementation for testing
-    from collections import namedtuple
     import datetime
+    from collections import namedtuple
     File = namedtuple("File", ["name", "size_bytes", "url", "last_modified"])
     return [
         File("pr.class", 102, base_url + "pr.class", datetime.datetime(2026, 9, 3, 8, 30)),

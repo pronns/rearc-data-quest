@@ -1,0 +1,5 @@
+target-version = "py311"
+builtins = ["spark"]
+
+[lint]
+ignore = ["EXE002", "DTZ001", "C408"]

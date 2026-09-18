@@ -1,9 +1,12 @@
-import sys, os
+import sys
+
 sys.path.append("/Workspace/Users/pronnoy1998@gmail.com/rearc-quest/src/alternatives/gold_pyspark_pipeline/transformations")
 from decimal import Decimal
+
 import pytest
+from gold_pyspark import population_stats, series_best_year
 from pyspark.sql import SparkSession
-from gold_pyspark import series_best_year, population_stats
+
 
 @pytest.fixture(scope="session")
 def spark():
