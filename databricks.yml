@@ -1,0 +1,57 @@
+bundle:
+  name: rearc-data-quest
+
+variables:
+  catalog:
+    default: rearc_quest
+  raw_root:
+    default: /Volumes/rearc_quest/raw/landing
+  contact_email:
+    default: pronnoy1998@gmail.com
+
+resources:
+  pipelines:
+    main_pipeline:
+      name: "[${bundle.target}] rearc-main-pipeline"
+      serverless: true
+      catalog: ${var.catalog}
+      schema: bronze
+      configuration:
+        raw_root: ${var.raw_root}
+      libraries:
+        - glob:
+            include: ./src/transformations/**
+      continuous: false
+      development: true
+
+  jobs:
+    rearc_quest_job:
+      name: "[${bundle.target}] rearc-quest-job"
+      tasks:
+        - task_key: ingest
+          notebook_task:
+            notebook_path: ./notebooks/01_ingest.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: raw
+              volume: landing
+              contact_email: ${var.contact_email}
+          run_if: ALL_SUCCESS
+
+        - task_key: pipeline
+          depends_on:
+            - task_key: ingest
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.main_pipeline.id}
+          run_if: ALL_SUCCESS
+
+      email_notifications:
+        on_failure:
+          - ${var.contact_email}
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-5d832ace-b003.cloud.databricks.com
