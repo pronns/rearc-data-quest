@@ -1,11 +1,23 @@
 """
 Data contract test: asserts pipeline table schemas match contracts/bls_pr.yml
-Run via: pytest tests/test_contract.py (locally with PySpark)
-Or run as a notebook in Databricks after pipeline completes.
+Run as a notebook in Databricks after pipeline completes.
+
+These tests query Unity Catalog tables (rearc_quest.bronze/silver/gold)
+and are skipped outside Databricks (e.g. in GitHub Actions CI).
 """
+import os
+
 import pytest
 import yaml
 from pyspark.sql import SparkSession
+
+# Skip all tests in this module when not running on Databricks.
+# The contract tests query three-part Unity Catalog namespaces that only
+# exist after the pipeline has run on Databricks.
+pytestmark = pytest.mark.skipif(
+    "DATABRICKS_RUNTIME_VERSION" not in os.environ,
+    reason="Contract tests require Databricks Unity Catalog tables",
+)
 
 
 @pytest.fixture(scope="session")

@@ -8,7 +8,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install -r requirements-dev.txt # pyspark, pytest, requests, ruff
+      - run: pip install -r requirements-dev.txt # pyspark, pytest, requests, ruff, pyyaml
       - run: ruff check src tests
       - run: PYTHONPATH=src:src/alternatives:src/alternatives/gold_pyspark_pipeline/transformations pytest -q
       - uses: databricks/setup-cli@main
