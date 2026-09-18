@@ -3,9 +3,10 @@ Data contract test: asserts pipeline table schemas match contracts/bls_pr.yml
 Run via: pytest tests/test_contract.py (locally with PySpark)
 Or run as a notebook in Databricks after pipeline completes.
 """
-import yaml
 import pytest
+import yaml
 from pyspark.sql import SparkSession
+
 
 @pytest.fixture(scope="session")
 def spark():
